@@ -15,7 +15,11 @@ app.get("/*", function (req, res) {
 });
 
 wsServer.on("connection", (socket) => {
-  console.log("connected");
+  console.log("socket connected");
+  socket.on("message", (msg) => {
+    const parsedMsg = JSON.parse(msg);
+    console.log(parsedMsg);
+  });
 });
 
 httpServer.listen(3050, () => {
