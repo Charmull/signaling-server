@@ -60,6 +60,18 @@ wsServer.on("connection", (socket, req) => {
           }
         }
         break;
+      case "answer":
+        // 해당 workspace에 있는 다른 멤버들에게 answer 보내기
+        // TODO: 3번째 멤버 입장부터, 이미 answer를 받아서 remoteOffer를 설정한 socket에도 answer를 다시 보내고 있음. 추후 재전송하지 않도록 수정 필요
+        const answerWs = sockets.get(socket);
+        for (let memSocket of workspaces.get(answerWs)) {
+          if (memSocket != socket) {
+            memSocket.send(
+              JSON.stringify({ event: "answer", data: parsedMsg.data })
+            );
+          }
+        }
+        break;
     }
   });
 });
