@@ -72,6 +72,18 @@ wsServer.on("connection", (socket, req) => {
           }
         }
         break;
+      case "ice":
+        // 해당 workspace에 있는 다른 멤버들에게 ice 보내기
+        // TODO: 3번째 멤버 입장부터, 이미 answer를 받아서 remoteOffer를 설정한 socket에도 answer를 다시 보내고 있음. 추후 재전송하지 않도록 수정 필요
+        const iceWs = sockets.get(socket);
+        for (let memSocket of workspaces.get(iceWs)) {
+          if (memSocket != socket) {
+            memSocket.send(
+              JSON.stringify({ event: "ice", data: parsedMsg.data })
+            );
+          }
+        }
+        break;
     }
   });
 });
