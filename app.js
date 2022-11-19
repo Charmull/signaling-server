@@ -24,11 +24,11 @@ wsServer.on("connection", (socket, req) => {
     console.log(wsServer.clients.size);
     // console.log(workspaces);
 
+    let workspace;
     switch (parsedMsg.event) {
       // socket 연결 (workspace 입장 시)
       case "enter":
         socket["id"] = parsedMsg.from;
-        console.log(socket["id"]);
         // socket의 workspace id
         const workspaceId = parsedMsg.data;
         // workspaceId에 맞춰 workspaces에 socket 추가
@@ -61,9 +61,10 @@ wsServer.on("connection", (socket, req) => {
         break;
       // client에서 offer 생성 후 서버에서 offer msg 받을 시
       case "offer":
-        // 해당 workspace에 있는 다른 멤버들에게 offer 보내기
-        const offerWS = sockets.get(socket);
-        for (let memSocket of workspaces.get(offerWS)) {
+        // 해당 workspace에 있는 타겟 멤버(새로 입장한 멤버)에게 offer 보내기
+        // const offerWS = sockets.get(socket);
+        workspace = sockets.get(socket);
+        for (let memSocket of workspaces.get(workspace)) {
           if (memSocket["id"] === parsedMsg.to) {
             memSocket.send(
               JSON.stringify({
@@ -77,9 +78,10 @@ wsServer.on("connection", (socket, req) => {
         }
         break;
       case "answer":
-        // 해당 workspace에 있는 다른 멤버들에게 answer 보내기
-        const answerWS = sockets.get(socket);
-        for (let memSocket of workspaces.get(answerWS)) {
+        // 해당 workspace에 있는 타겟 멤버(answer 받을 멤버)에게 answer 보내기
+        // const answerWS = sockets.get(socket);
+        workspace = sockets.get(socket);
+        for (let memSocket of workspaces.get(workspace)) {
           if (memSocket["id"] === parsedMsg.to) {
             memSocket.send(
               JSON.stringify({
@@ -93,10 +95,10 @@ wsServer.on("connection", (socket, req) => {
         }
         break;
       case "ice":
-        // 해당 workspace에 있는 다른 멤버들에게 ice 보내기
-        // TODO: 3번째 멤버 입장부터, 이미 answer를 받아서 remoteOffer를 설정한 socket에도 answer를 다시 보내고 있음. 추후 재전송하지 않도록 수정 필요
-        const iceWS = sockets.get(socket);
-        for (let memSocket of workspaces.get(iceWS)) {
+        // 해당 workspace에 있는 타겟 멤버(ice 받을 멤버)에게 ice 보내기
+        // const iceWS = sockets.get(socket);
+        workspace = sockets.get(socket);
+        for (let memSocket of workspaces.get(workspace)) {
           if (memSocket["id"] === parsedMsg.to) {
             memSocket.send(
               JSON.stringify({
@@ -109,10 +111,13 @@ wsServer.on("connection", (socket, req) => {
           }
         }
         break;
+      // 페이지를 나간 멤버가 'exitPage' 메세지를 보냄
       case "exitPage":
+        // 페이지를 나간 멤버가 있던 workspace를 찾고, 그 안에 있는 멤버들에게 누가 나갔는지 알림
         console.log("Exit!!!!");
-        const exitPageWS = sockets.get(socket);
-        for (let memSocket of workspaces.get(exitPageWS)) {
+        // const exitPageWS = sockets.get(socket);
+        workspace = sockets.get(socket);
+        for (let memSocket of workspaces.get(workspace)) {
           if (memSocket !== socket) {
             memSocket.send(
               JSON.stringify({
@@ -125,8 +130,8 @@ wsServer.on("connection", (socket, req) => {
           }
         }
         workspaces
-          .get(exitPageWS)
-          .splice(workspaces.get(exitPageWS).indexOf(socket), 1);
+          .get(workspace)
+          .splice(workspaces.get(workspace).indexOf(socket), 1);
         sockets.delete(socket);
         break;
     }
